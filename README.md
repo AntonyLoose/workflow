@@ -10,8 +10,9 @@ The script requires the following:
 
 - git installed
 - git authentication (SSH keys) setup
-- to be run as root
 - your filesystem format to be `btrfs`
+- you to have modified `/etc/sudoers`
+  - uncomment this line: `%wheel ALL=(ALL) ALL`
 
 ## `maintenance.sh`
 

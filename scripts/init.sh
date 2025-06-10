@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 echo "--------------- Initialising Arch Config ---------------"
 echo ""
 
@@ -7,7 +9,6 @@ if [[ $EUID -ne 0 ]]; then
   echo "Please run as root"
   exit 1
 fi
-
 
 echo "---------- Verifying Git Install ----------"
 echo ""
@@ -17,154 +18,87 @@ if ! command -v git >/dev/null 2>&1; then
   exit 1
 fi
 
-
 echo ""
 echo "---------- Creating User ----------"
-
 read -p "Username: " name
-useradd -m -G wheel "$name"
 
+useradd -m -G wheel -s /bin/bash "$name"
 echo "Set password for $name:"
 passwd "$name"
 
+echo ""
+echo "---------- Copying SSH keys ----------"
+mkdir -p /home/"$name"/.ssh
+cp /root/.ssh/github /home/"$name"/.ssh/
+cp /root/.ssh/github.pub /home/"$name"/.ssh/
+chown -R "$name":"$name" /home/"$name"/.ssh
+chmod 700 /home/"$name"/.ssh
+chmod 600 /home/"$name"/.ssh/github /home/"$name"/.ssh/github.pub
 
 echo ""
-echo "---------- Copying keys ----------"
-
-mkdir /home/$name/.ssh
-touch /home/$name/.ssh/github
-touch /home/$name/.ssh/github.pub
-cp /root/.ssh/github /home/$name/.ssh/github
-cp /root/.ssh/github.pub /home/$name/.ssh/github.pub
-chown -R $name:$name /home/$name/.ssh
-
-
 echo "---------- Security ----------"
-echo ""
-
 
 echo "----- Firewalls -----"
-echo ""
-
 pacman -Sy --noconfirm ufw
-systemctl enable --now ufw
 ufw default deny incoming
 ufw default allow outgoing
-
+systemctl enable --now ufw
+ufw enable
 
 echo ""
 echo "----- Failed login delay -----"
-echo "auth optional pam_faildelay.so delay=4000000" >> /etc/pam.d/system-login
-
+if ! grep -q "pam_faildelay.so" /etc/pam.d/system-login; then
+  echo "auth optional pam_faildelay.so delay=4000000" >> /etc/pam.d/system-login
+fi
 
 echo ""
 echo "----- Disabling root access via SSH -----"
-
 echo "PermitRootLogin no" > /etc/ssh/sshd_config.d/20-deny-root.conf
+systemctl reload sshd
 
 echo ""
 echo "---------- Installing sudo ----------"
-
 pacman -Sy --noconfirm sudo
 
 echo ""
-echo "---------- Switching to user ----------"
-
-su $name
-
-
-echo ""
-echo "---------- Enabling ssh agent ----------"
-eval "$(ssh-agent -s)"
-ssh-add /home/$name/.ssh/github
-
-
-echo "---------- less ----------"
-echo ""
-
-sudo pacman -Sy --noconfirm less
-
-
-echo "---------- npm & nodejs ----------"
-echo ""
-
-sudo pacman -Sy --noconfirm nodejs npm
-
+echo "---------- Installing base packages ----------"
+pacman -Sy --noconfirm \
+  less nodejs npm neovim lua-language-server texlab xclip \
+  i3-wm i3status picom kitty fastfetch firefox
 
 echo ""
+echo "---------- Setting up user environment ----------"
 
-echo "---------- Neovim ----------"
-sudo pacman -Sy --noconfirm neovim
-rm -rf /home/"$name"/.config/nvim
-git clone git@github.com:AntonyLoose/nvim-config.git /home/"$name"/.config/nvim
-chown -R "$name:$name" /home/"$name"/.config/nvim
+run_as_user() {
+  sudo -u "$name" bash -c "$1"
+}
 
+# Clone user config repos as the new user
+run_as_user "git clone git@github.com:AntonyLoose/nvim-config.git /home/$name/.config/nvim"
+run_as_user "git clone git@github.com:AntonyLoose/i3-config.git /home/$name/.config/i3"
+run_as_user "git clone git@github.com:AntonyLoose/i3status-config.git /home/$name/.config/i3status"
+run_as_user "git clone git@github.com:AntonyLoose/picom-config.git /home/$name/.config/picom"
+run_as_user "git clone git@github.com:AntonyLoose/kitty-config.git /home/$name/.config/kitty"
+run_as_user "git clone git@github.com:AntonyLoose/dotfiles.git /home/$name/dotfiles"
 
-echo ""
+# Fix ownership
+chown -R "$name":"$name" /home/"$name"/.config /home/"$name"/dotfiles
 
-echo "----- Language Servers -----"
-sudo pacman -Sy --noconfirm lua-language-server texlab
-npm install -g typescript typescript-language-server vscode-langservers-extracted css-variables-language-server bash-language-server
+# Setup dotfiles symlinks
+run_as_user "rm -f /home/$name/.bashrc /home/$name/.bash_profile"
+run_as_user "ln -s /home/$name/dotfiles/.bashrc /home/$name/.bashrc"
+run_as_user "ln -s /home/$name/dotfiles/.bash_profile /home/$name/.bash_profile"
+run_as_user "chown -h $name:$name /home/$name/.bashrc /home/$name/.bash_profile"
 
-
-echo ""
-
-echo "---------- i3 ----------"
-sudo pacman -Sy --noconfirm i3-wm
-rm -rf /home/"$name"/.config/i3
-git clone git@github:AntonyLoose/i3-config /home/"$name"/.config/i3
-chown -R "$name:$name" /home/"$name"/.config/i3
-
-echo ""
-echo "---------- i3status ----------"
-
-sudo pacman -Sy --noconfirm i3status
-rm -rf /home/"$name"/.config/i3status
-git clone git@github:AntonyLoose/i3status-config /home/"$name"/.config/i3status
-chown -R "$name:$name" /home/"$name"/.config/i3status
-
+# Setup GTK dark theme preference
+run_as_user "mkdir -p /home/$name/.config/gtk-3.0"
+run_as_user "echo '[Settings]' > /home/$name/.config/gtk-3.0/settings.ini"
+run_as_user "echo 'gtk-application-prefer-dark-theme=true' >> /home/$name/.config/gtk-3.0/settings.ini"
 
 echo ""
-echo "---------- picom ----------"
-
-sudo pacman -Sy --noconfirm picom
-rm -rf /home/"$name"/.config/picom
-git clone git@github.com:AntonyLoose/picom-config /home/"$name"/.config/picom
-chown -R "$name:$name" /home/"$name"/.config/picom
-
+echo "----- Installing additional language servers and npm packages -----"
+pacman -Sy --noconfirm lua-language-server texlab
+run_as_user "npm install -g typescript typescript-language-server vscode-langservers-extracted css-variables-language-server bash-language-server"
 
 echo ""
-echo "---------- Kitty ----------"
-
-sudo pacman -Sy --noconfirm kitty
-rm -rf /home/"$name"/.config/kitty
-git clone git@github.com:AntonyLoose/kitty-config /home/"$name"/.config/kitty
-chown -R "$name:$name" /home/"$name"/.config/kitty
-
-
-echo ""
-echo "---------- fastfetch ----------"
-
-sudo pacman -Sy --noconfirm fastfetch
-
-
-echo ""
-echo "---------- Firefox ----------"
-
-sudo pacman -Sy --noconfirm firefox
-
-
-echo ""
-echo "---------- Device theme ----------"
-
-sudo touch ~/.config/gtk-3.0/settings.ini
-"[Settings]" > ~/.config/gtk-3.0/settings.ini
-"gtk-application-prefer-dark-theme=true" > ~/.config/gtk-3.0/settings.ini
-
-echo ""
-echo "---------- Owning .config ----------"
-chown -R $name:$name ~/.config
-
-
-echo ""
-echo "----- Done -----"
+echo "----- Done! User $name is set up with your configs and packages -----"
