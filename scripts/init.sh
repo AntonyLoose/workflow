@@ -54,7 +54,6 @@ fi
 echo ""
 echo "----- Disabling root access via SSH -----"
 echo "PermitRootLogin no" > /etc/ssh/sshd_config.d/20-deny-root.conf
-systemctl reload sshd
 
 echo ""
 echo "---------- Installing sudo ----------"
