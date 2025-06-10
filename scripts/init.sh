@@ -103,49 +103,4 @@ echo ""
 pacman -S --noconfirm firefox
 
 
-echo "---------- Snapper ----------"
-echo ""
-pacman -S --noconfirm snapper
-snapper -c root create-config /
-
-btrfs subvolume create /.snapshots
-chmod 750 /.snapshots
-
-echo "Updating /etc/fstab:"
-blkid
-read -p "UUID for root volume (e.g. UUID=xxxx-xxxx): " uuid
-echo "$uuid /               btrfs  subvol=@             0 1" >> /etc/fstab
-echo "$uuid /home           btrfs  subvol=@home         0 2" >> /etc/fstab
-echo "$uuid /.snapshots     btrfs  subvol=@/.snapshots  0 0" >> /etc/fstab
-mount -a
-
-
-echo "----- Setting Permissions -----"
-echo ""
-chown "$name:$name" /.snapshots
-
-
-echo "----- Auto Snapshots -----"
-echo ""
-pacman -S --noconfirm snapper-support
-systemctl enable --now snapper-timeline.timer
-systemctl enable --now snapper-cleanup.timer
-
-cat <<EOF >> /etc/snapper/configs/root
-TIMELINE_CREATE="yes"
-TIMELINE_CLEANUP="yes"
-TIMELINE_LIMIT_HOURLY="10"
-TIMELINE_LIMIT_DAILY="7"
-TIMELINE_LIMIT_WEEKLY="4"
-TIMELINE_LIMIT_MONTHLY="6"
-TIMELINE_LIMIT_YEARLY="1"
-EOF
-
-
-echo "----- Snapshots On Boot -----"
-echo ""
-pacman -S --noconfirm grub-btrfs
-systemctl enable --now grub-btrfs.path
-
-
 echo "----- Done -----"
