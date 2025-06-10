@@ -73,6 +73,8 @@ run_as_user() {
 }
 
 # Clone user config repos as the new user
+run_as_user 'eval "($ssh-agent -s)"'
+run_as_user "ssh-add ~/.ssh/github"
 run_as_user "git clone git@github.com:AntonyLoose/nvim-config.git /home/$name/.config/nvim"
 run_as_user "git clone git@github.com:AntonyLoose/i3-config.git /home/$name/.config/i3"
 run_as_user "git clone git@github.com:AntonyLoose/i3status-config.git /home/$name/.config/i3status"
