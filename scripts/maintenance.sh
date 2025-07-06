@@ -12,11 +12,11 @@ echo "----------------------------------------------------"
 echo "UPDATING SYSTEM"
 echo "----------------------------------------------------"
 
-pacman -Qu
+yay -Qu
 echo "The following packages will be updated."
 read -p "Press any key to continue" _
 
-pacman -Syu
+yay -Syu
 
 echo ""
 echo "----------------------------------------------------"
@@ -41,7 +41,7 @@ orphaned=$(pacman -Qtd)
 if [ -n "$orphaned" ]; then
     echo "Removing:"
     echo "$orphaned"
-    pacman -Qm
+    yay -Qm
 else
     echo "No orphaned packages to remove."
 fi
