@@ -63,7 +63,7 @@ pacman -Sy --noconfirm \
   i3-wm i3status picom kitty fastfetch firefox \
   networkmanager keychain base-devel dmenu feh \
   xorg xorg-server xorg-xinit pipewire pipewire-pulse \
-  wireplumber pipewire-alsa pacman-contrib fd ripgrep
+  wireplumber pipewire-alsa pacman-contrib fd ripgrep xorg-xrandr
 
 echo ""
 echo "---------- Setting up user environment ----------"
