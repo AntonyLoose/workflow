@@ -1,4 +1,5 @@
 #!/bin/bash
 
-sudo x0vncserver -display :0 -localhost -alwaysshared -geometry 1920x1080 -rfbauth ~/.config/tigervnc/passwd
+# I use a weird geometry as my laptop resolution is weird.
+sudo x0vncserver -display :0 -localhost -alwaysshared -geometry 1366x768 -rfbauth ~/.config/tigervnc/passwd
 
