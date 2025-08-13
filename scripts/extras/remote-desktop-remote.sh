@@ -8,6 +8,8 @@
 # X11UseLocalhost yes
 
 sudo pacman -Sy openssh xorg-xauth
+yay -Sy xrdp xorgxrdp
+
 sudo systemctl enable --now sshd
 
 read -rp "Enter the public key generated on the client: " key
