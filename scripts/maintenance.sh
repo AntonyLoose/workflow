@@ -16,7 +16,7 @@ yay -Qu
 echo "The following packages will be updated."
 read -p "Press any key to continue" _
 
-yay -Syu
+yay -Syu --diffmenu
 
 echo ""
 echo "----------------------------------------------------"
