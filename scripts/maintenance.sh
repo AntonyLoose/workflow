@@ -12,11 +12,17 @@ echo "----------------------------------------------------"
 echo "UPDATING SYSTEM"
 echo "----------------------------------------------------"
 
-yay -Qu
-echo "The following packages will be updated."
+pacman -Qu
+echo "The following OFFICIAL packages will be updated."
 read -p "Press any key to continue" _
 
-yay -Syu --diffmenu
+pacman -Syu
+
+yay -Qu --foreign
+echo "The following AUR packages will be updated."
+read -p "Press any key to continue" _
+
+yay -Syu --foreign
 
 echo ""
 echo "----------------------------------------------------"
