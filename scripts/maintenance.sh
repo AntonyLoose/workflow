@@ -16,7 +16,7 @@ pacman -Qu
 echo "The following OFFICIAL packages will be updated."
 read -p "Press any key to continue" _
 
-pacman -Syu
+sudo pacman -Syu
 
 yay -Qu --foreign
 echo "The following AUR packages will be updated."
