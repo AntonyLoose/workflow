@@ -2,16 +2,16 @@
 
 set -euo pipefail
 
-echo "--------------- Initialising Arch Config ---------------"
 echo ""
+echo "--------------- Initialising Arch Config ---------------"
 
 if [[ $EUID -ne 0 ]]; then
   echo "Please run as root"
   exit 1
 fi
 
-echo "---------- Verifying Git Install ----------"
 echo ""
+echo "---------- Verifying Git Install ----------"
 
 if ! command -v git >/dev/null 2>&1; then
   echo "Git is not installed. Please install Git and configure authentication before running this script."
@@ -55,6 +55,11 @@ fi
 echo ""
 echo "----- Disabling root access via SSH -----"
 echo "PermitRootLogin no" > /etc/ssh/sshd_config.d/20-deny-root.conf
+
+echo ""
+echo "----- Enabling and starting Auditd -----"
+systemctl enable auditd
+systemctl start auditd
 
 echo ""
 echo "---------- Installing base packages ----------"
